@@ -12,6 +12,7 @@ import { SetSearchPopUp } from "../redux/stateSlice/clickActionSlice";
 import store from "../redux/store/store";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
+import { ToastContainer, toast } from 'react-toastify';
 
 function LanguageSwitcher() {
   const location = useLocation();
@@ -39,6 +40,7 @@ const NavbarOne = () => {
   const [active, setActive] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Estado de autenticación
   const [isUserType1, setIsUserType1] = useState(false); // Estado para el tipo de usuario
+  const [isSessionChecked, setIsSessionChecked] = useState(false); // Estado para verificar si la sesión se ha comprobado
   const { t } = useTranslation();
   const navigate = useNavigate(); // Para redirigir
 
@@ -46,24 +48,25 @@ const NavbarOne = () => {
     const checkSession = async () => {
       const user = JSON.parse(localStorage.getItem('user')); // Obtener la variable 'user' del localStorage
       const token = localStorage.getItem('token'); // Obtener la variable 'token' del localStorage
-      // console.log(user)
-      // console.log(token)
-
+    
       if (user && token) {  // Verificar si hay un token disponible
         try {
           // Realizar una llamada a la API para verificar la validez del token
-          const response = await axios.get('https://production.backend.msbtransport.mosquedacordova.com/api/check-session', {
+          const response = await axios.get('https://backend.msbtransport.mosquedacordova.com/api/check-session', {
             headers: {
               Authorization: `Bearer ${token}`
             }
           });
-          // console.log(user)
-          // console.log(response)
-
+    
           if (response.status === 200) {
             setIsAuthenticated(true); // La sesión está activa
+            
             if (user.type === 1) {
               setIsUserType1(true);
+            } else if (user.type === 2 && window.location.pathname === '/users-list') {
+              // Redirect to /transport-list and show a notification if user is not authorized for /users-list
+              toast.warning('You do not have sufficient permissions to access this section.');
+              navigate('/transport-list'); // Redirect to transport-list
             }
           }
         } catch (error) {
@@ -73,6 +76,8 @@ const NavbarOne = () => {
       } else {
         handleSessionExpired(); // Manejar la sesión expirada si no hay token
       }
+
+      setIsSessionChecked(true); // Indicar que la sesión se ha comprobado
     };
 
     checkSession();
@@ -92,11 +97,6 @@ const NavbarOne = () => {
     localStorage.removeItem('user'); // Remover el usuario del almacenamiento local
     setIsAuthenticated(false); // Establecer autenticación como falsa
     navigate('/login'); // Redirigir al login
-  };
-
-  const searchPopUp = useSelector((state) => state.clickAction.searchPopUp);
-  const actionSearch = () => {
-    store.dispatch(SetSearchPopUp(!searchPopUp));
   };
 
   useEffect(() => {
@@ -138,7 +138,7 @@ const NavbarOne = () => {
           </div>
         </div>
         <nav className={active ? "navbar navbar-area-1 navbar-area navbar-expand-lg sticky-active" : "navbar navbar-area-1 navbar-area navbar-expand-lg border-bottom"}>
-          <div className='container nav-container'>
+          <div className='container nav-container px-3'>
             <div className='responsive-mobile-menu'>
               <button onClick={() => setOpen(!open)} className={open ? "menu toggle-btn d-block d-lg-none open" : "menu toggle-btn d-block d-lg-none"} data-target='#transpro_main_menu' aria-expanded='false' aria-label='Toggle navigation'>
                 <span className='icon-left' />
@@ -161,6 +161,9 @@ const NavbarOne = () => {
           </div>
         </nav>
       </header>
+
+      {/* Toast Container para notificaciones */}
+      <ToastContainer />
     </>
   );
 };
