@@ -5,7 +5,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { FaEdit, FaTrash } from "react-icons/fa";
 import axios from 'axios';
 
-const urlBack = 'https://backend.msbtransport.mosquedacordova.com'; // URL base del backend
+const urlBack = 'https://production.backend.msbtransport.mosquedacordova.com'; // URL base del backend
 
 const UsersList = () => {
   const [users, setUsers] = useState([]); // Initialize as an empty array

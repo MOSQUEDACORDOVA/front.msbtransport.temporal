@@ -52,7 +52,7 @@ const NavbarOne = () => {
       if (user && token) {  // Verificar si hay un token disponible
         try {
           // Realizar una llamada a la API para verificar la validez del token
-          const response = await axios.get('https://backend.msbtransport.mosquedacordova.com/api/check-session', {
+          const response = await axios.get('https://production.backend.msbtransport.mosquedacordova.com/api/check-session', {
             headers: {
               Authorization: `Bearer ${token}`
             }
