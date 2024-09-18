@@ -182,7 +182,7 @@ const DeliveryForm = () => {
         setNewDelivery((prev) => ({ ...prev, duree: '00:00' }));
       }
     } else {
-      setNewDelivery((prev) => ({ ...prev, duree: '' }));
+      setNewDelivery((prev) => ({ ...prev, duree: '00:00' }));
     }
   };
 
@@ -219,24 +219,31 @@ const DeliveryForm = () => {
           ...facture,
           code_feature: facture.code_feature,
           colis: facture.colis,
-        }))
-      }))
+        })),
+      })),
     };
-
+  
     try {
       const response = await axios.post(`${urlBack}/api/delivery`, deliveryData, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      console.log(response, "add response")
+      console.log(response, "add response");
       toast.success('Delivery added successfully!');
       fetchDeliveries();
       handleAddDeliveryClick();
       closeModal();
     } catch (error) {
-      console.error('Error adding delivery:', error);
-      toast.error('Error adding delivery');
+      if (error.response && error.response.data && error.response.data.errors) {
+        Object.keys(error.response.data.errors).forEach((key) => {
+          error.response.data.errors[key].forEach((message) => {
+            toast.error(message); // Muestra cada mensaje de error de validación
+          });
+        });
+      } else {
+        toast.error('Error adding delivery');
+      }
     }
-  };
+  };  
 
   const handleEditDeliveryClick = (delivery) => {
     // Configurar los datos del delivery
@@ -299,18 +306,24 @@ const DeliveryForm = () => {
       const response = await axios.put(`${urlBack}/api/delivery/${newDelivery.id}`, deliveryData, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-
-      console.log(response, "updated")
+      console.log(response, "updated");
   
       toast.success('Delivery updated successfully!');
       fetchDeliveries();
       handleAddDeliveryClick();
       closeModal();
     } catch (error) {
-      console.error('Error updating delivery:', error);
-      toast.error('Error updating delivery');
+      if (error.response && error.response.data && error.response.data.errors) {
+        Object.keys(error.response.data.errors).forEach((key) => {
+          error.response.data.errors[key].forEach((message) => {
+            toast.error(message); // Muestra cada mensaje de error de validación
+          });
+        });
+      } else {
+        toast.error('Error updating delivery');
+      }
     }
-  };  
+  };
 
   const handleDeleteDelivery = async (id) => {
     try {
@@ -326,30 +339,66 @@ const DeliveryForm = () => {
   };
 
   const validateStep = (step) => {
+    // Validar Step 1
     if (step === 1) {
-      const { date, arrivee, depart, arrets, plaque, camion, chauffeur, territoire, initial, final, parcour, cycle, quar } = newDelivery;
-      if (!date || !arrivee || !depart || !arrets || !plaque || !camion || !chauffeur || !territoire || !initial || !final || !parcour || !cycle || !quar) {
+      const {
+        date,
+        arrivee,
+        depart,
+        arrets,
+        plaque,
+        camion,
+        chauffeur,
+        territoire,
+        initial,
+        final,
+        parcour,
+        cycle,
+        quar
+      } = newDelivery;
+  
+      // Verificar si algún campo está vacío
+      if (
+        !date || !arrivee || !depart || !arrets || !plaque || !camion ||
+        !chauffeur || !territoire || !initial || !final || !parcour ||
+        !cycle || !quar
+      ) {
         toast.error('Please fill in all required fields in Step 1.');
         return false;
       }
+  
+      // Validaciones adicionales si es necesario (ej: fechas coherentes)
+      if (new Date(arrivee) > new Date(depart)) {
+        toast.error('Arrivee time cannot be later than Depart time.');
+        return false;
+      }
     }
+  
+    // Validar Step 2
     if (step === 2) {
-      const client1 = clients[0]; // Client 1 is mandatory
-      if (!client1.client_code || !client1.num_du_client || !client1.hr_arrivee || !client1.hr_depart || !client1.nom_imprime || !client1.ref) {
+      const client1 = clients[0]; // El primer cliente es obligatorio
+  
+      // Validar los campos obligatorios del primer cliente
+      if (
+        !client1.client_code || !client1.num_du_client || !client1.hr_arrivee ||
+        !client1.hr_depart || !client1.nom_imprime || !client1.ref
+      ) {
         toast.error('Please fill in all required fields for Client 1.');
         return false;
       }
-
-      // Validate other optional clients if present
+  
+      // Validar los campos de otros clientes opcionales
       for (let i = 1; i < clients.length; i++) {
         const client = clients[i];
-        if ((client.client_code || client.num_du_client) && (!client.hr_arrivee || !client.hr_depart || !client.nom_imprime || !client.ref)) {
+        if ((client.client_code || client.num_du_client) && (
+          !client.hr_arrivee || !client.hr_depart || !client.nom_imprime || !client.ref
+        )) {
           toast.error(`Please complete all fields for Client ${i + 1}.`);
           return false;
         }
       }
-
-      // Validate factures for each client
+  
+      // Validar las facturas (factures) de cada cliente
       clients.forEach((client, index) => {
         if (client.factures) {
           client.factures.forEach((facture, factureIndex) => {
@@ -361,8 +410,10 @@ const DeliveryForm = () => {
         }
       });
     }
+  
+    // Si todas las validaciones pasaron, retornamos true
     return true;
-  };
+  };  
 
   const handleNextStep = () => {
     if (validateStep(currentStep)) {

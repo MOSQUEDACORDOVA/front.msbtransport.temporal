@@ -59,8 +59,12 @@ const UsersList = () => {
     setIsEditMode(true);
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false); // Estado para controlar el botón
+
   const handleAddUser = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true); // Bloquear el botón
+
     try {
       const response = await axios.post(`${urlBack}/api/register`, {
         name: newUser.name,
@@ -75,33 +79,57 @@ const UsersList = () => {
       toast.success('User added successfully!');
       setNewUser({ id: null, name: '', email: '', password: '', password_confirmation: '' });
       fetchUsers();
-      closeModal();
+      closeModalRef.current.click(); // Cerrar el modal
     } catch (error) {
-      toast.error('Error adding user: ' + (error.response?.data?.errors || 'Unknown error'));
+      if (error.response && error.response.data && error.response.data.errors) {
+        // Mostrar los errores de validación
+        Object.keys(error.response.data.errors).forEach((key) => {
+          error.response.data.errors[key].forEach((message) => {
+            toast.error(message);
+          });
+        });
+      } else {
+        toast.error('Unknown error occurred while adding user.');
+      }
+    } finally {
+      setIsSubmitting(false); // Habilitar el botón nuevamente
     }
   };
 
   const handleEditUser = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true); // Bloquear el botón al iniciar la solicitud
+  
     try {
       const response = await axios.put(`${urlBack}/api/users/${newUser.id}`, {
         name: newUser.name,
         email: newUser.email,
-        password: newUser.password,
-        password_confirmation: newUser.password_confirmation,
+        password: newUser.password, // Puedes eliminar este campo si no deseas cambiar la contraseña
+        password_confirmation: newUser.password_confirmation, // Solo si deseas confirmar la contraseña
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-
+  
       console.log(response, "updating user");
       toast.success('User updated successfully!');
       setNewUser({ id: null, name: '', email: '', password: '', password_confirmation: '' });
-      fetchUsers();
-      closeModal();
+      fetchUsers(); // Refrescar la lista de usuarios
+      closeModalRef.current.click(); // Cerrar el modal
     } catch (error) {
       console.log(error, "error updating user");
-
-      toast.error('Error updating user: ' + (error.response?.data?.errors || 'Unknown error'));
+  
+      if (error.response && error.response.data && error.response.data.errors) {
+        // Mostrar errores de validación
+        Object.keys(error.response.data.errors).forEach((key) => {
+          error.response.data.errors[key].forEach((message) => {
+            toast.error(message);
+          });
+        });
+      } else {
+        toast.error('Unknown error occurred while updating user.');
+      }
+    } finally {
+      setIsSubmitting(false); // Habilitar el botón después de la solicitud
     }
   };
 
@@ -266,8 +294,8 @@ const UsersList = () => {
                     </div>
                   </>
                 )}
-                <button type='submit' className='btn btn-base'>
-                  {isEditMode ? 'Save Changes' : 'Save User'}
+                <button type='submit' className='btn btn-base' disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Save User'}
                 </button>
               </form>
             </div>
