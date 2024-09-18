@@ -173,18 +173,23 @@ const DeliveryForm = () => {
     if (arrivee && depart) {
       const arriveeTime = new Date(`1970-01-01T${arrivee}:00`);
       const departTime = new Date(`1970-01-01T${depart}:00`);
-      if (arriveeTime > departTime) {
-        const diffMs = arriveeTime - departTime;
+      
+      // Cambiamos la condición para que el arrivee sea menor que el depart
+      if (arriveeTime < departTime) {
+        const diffMs = departTime - arriveeTime; // Invertimos la resta
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
         const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        setNewDelivery((prev) => ({ ...prev, duree: `${diffHours}:${diffMinutes < 10 ? '0' : ''}${diffMinutes}` }));
+        setNewDelivery((prev) => ({
+          ...prev,
+          duree: `${diffHours}:${diffMinutes < 10 ? '0' : ''}${diffMinutes}`,
+        }));
       } else {
         setNewDelivery((prev) => ({ ...prev, duree: '00:00' }));
       }
     } else {
       setNewDelivery((prev) => ({ ...prev, duree: '00:00' }));
     }
-  };
+  };  
 
   const handleAddDeliveryClick = () => {
     setNewDelivery(initialDeliveryState);
